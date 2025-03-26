@@ -74,7 +74,6 @@ sys_sleep(void)
 int 
 sys_pgaccess(void) 
 {
-  panic("sys_pgaccess called!"); 
   struct proc *p = myproc();
    uint64 addr;
    int n;
