@@ -71,11 +71,42 @@ sys_sleep(void)
 
 
 #ifdef LAB_PGTBL
-int
-sys_pgaccess(void)
+int 
+sys_pgaccess(void) 
 {
-  // lab pgtbl: your code here.
-  return 0;
+  panic("sys_pgaccess called!"); 
+  struct proc *p = myproc();
+   uint64 addr;
+   int n;
+   uint64 out;
+   int i;
+   pte_t *pte;
+   uint64 mask;
+ 
+   argaddr(0, &addr);
+   argint(1, &n);
+   argaddr(2, &out);
+   mask = 0;
+   printf("sys_pgaccess: n=%d, addr=%p, out=%p\n", n, addr, out);
+   if (n > (sizeof(uint64) * 8)) //max page
+     return -1;
+    printf("%d",n);
+   for (i = 0; i < n; i++) {
+     pte = walk(p->pagetable, addr + i * PGSIZE, 0);
+ 
+     if (pte == 0)
+       return -1;
+ 
+     if (*pte & PTE_A) {
+       mask |= 1 << i;
+       *pte &= ~PTE_A; //clear access bit
+     }
+   }
+ 
+   if (copyout(p->pagetable, out, (char *)&mask, (n + 7) / 8) < 0)
+     return -1;
+ 
+   return 0;
 }
 #endif
 
@@ -100,3 +131,4 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
