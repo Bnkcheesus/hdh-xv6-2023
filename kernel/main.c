@@ -3,6 +3,7 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "defs.h"
+#define LAB_PGTBL 1
 
 volatile static int started = 0;
 
