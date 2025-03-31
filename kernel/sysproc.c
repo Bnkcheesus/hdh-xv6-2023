@@ -74,38 +74,38 @@ sys_sleep(void)
 int 
 sys_pgaccess(void) 
 {
-  struct proc *p = myproc();
-   uint64 addr;
-   int n;
-   uint64 out;
-   int i;
-   pte_t *pte;
-   uint64 mask;
- 
-   argaddr(0, &addr);
-   argint(1, &n);
-   argaddr(2, &out);
-   mask = 0;
-   printf("sys_pgaccess: n=%d, addr=%p, out=%p\n", n, addr, out);
-   if (n > (sizeof(uint64) * 8)) //max page
-     return -1;
-    printf("%d",n);
-   for (i = 0; i < n; i++) {
-     pte = walk(p->pagetable, addr + i * PGSIZE, 0);
- 
-     if (pte == 0)
-       return -1;
- 
-     if (*pte & PTE_A) {
-       mask |= 1 << i;
-       *pte &= ~PTE_A; //clear access bit
-     }
-   }
- 
-   if (copyout(p->pagetable, out, (char *)&mask, (n + 7) / 8) < 0)
-     return -1;
- 
-   return 0;
+    struct proc *p = myproc();
+    uint64 start_va;
+    int num_pages;
+    uint64 result_buffer;
+    uint64 mask = 0;
+    
+    // Lấy các tham số từ user space
+    argaddr(0, &start_va);
+    argint(1, &num_pages);
+    argaddr(2, &result_buffer);
+
+    // Kiểm tra số lượng trang hợp lệ (1-64)
+    if (num_pages > 64)
+        return -1;
+    //Duyệt qua và kiểm tra PTE
+    for (int i = 0; i < num_pages; i++) {
+        uint64 va = start_va + i * PGSIZE;
+        pte_t *pte = walk(p->pagetable, va, 0);  // Không cấp phát trang mới
+        if (pte && (*pte & PTE_V)) {  // PTE hợp lệ
+            if (*pte & PTE_A) {
+                mask |= (1L << i);     // Đặt bit tương ứng
+                *pte &= ~PTE_A;        // Xóa bit truy cập
+            }
+        }
+    }
+
+    // Gửi kết quả về user space
+    if (copyout(p->pagetable, result_buffer, (char *)&mask, sizeof(mask)) < 0)
+        return -1;
+
+    return 0;
+
 }
 #endif
 
